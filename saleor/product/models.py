@@ -573,7 +573,8 @@ class ProductVariant(SortableModel, ModelWithMetadata):
         blank=True,
         null=True,
     )
-
+    original_sku = models.CharField(max_length=255, null=True, blank=True)
+    original_id = models.IntegerField(null=True, blank=True)
     objects = models.Manager.from_queryset(ProductVariantQueryset)()
     translated = TranslationProxy()
 
