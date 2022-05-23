@@ -9,7 +9,6 @@ All notable, unreleased changes to this project will be documented in this file.
 - Fix invalid `ADDED_PRODUCTS` event parameter for `OrderLinesCreate` mutation - #9653 by @IKarbowiak
 - Fix sorting by publication date with pagination - #9741 by @IKarbowiak
 - Fix max_length for voucher_code in Checkout model - #9791 by @SzymJ
-- Fix sorting by publication date with pagination - #9741 by IKarbowiak
 - Fix inaccurate tax calculations - #9799 by @IKarbowiak
 
 ### Other changes
