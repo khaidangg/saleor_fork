@@ -98,6 +98,13 @@ class Checkout(ModelWithMetadata):
         max_length=35, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
     )
 
+    alternative_channel = models.ForeignKey(
+        Channel,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+
     class Meta(ModelWithMetadata.Meta):
         ordering = ("-last_change", "pk")
         permissions = (

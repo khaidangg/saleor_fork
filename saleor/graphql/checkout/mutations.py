@@ -273,6 +273,9 @@ class CheckoutCreateInput(graphene.InputObjectType):
         LanguageCodeEnum, required=False, description="Checkout language code."
     )
 
+    alternative_channel = graphene.String(
+        description="Slug of an alternative channel in which to create a checkout."
+    )
 
 class CheckoutCreate(ModelMutation, I18nMixin):
     created = graphene.Field(
@@ -345,10 +348,15 @@ class CheckoutCreate(ModelMutation, I18nMixin):
     def clean_input(cls, info, instance: models.Checkout, data, input_cls=None):
         user = info.context.user
         channel = data.pop("channel")
+        alternative_channel = data.pop("alternative_channel")
         cleaned_input = super().clean_input(info, instance, data)
 
         cleaned_input["channel"] = channel
         cleaned_input["currency"] = channel.currency_code
+
+        if alternative_channel:
+            cleaned_input["alternative_channel"] = alternative_channel
+            cleaned_input["currency"] = channel.currency_code
 
         shipping_address = cls.retrieve_shipping_address(user, data)
         billing_address = cls.retrieve_billing_address(user, data)
@@ -361,10 +369,18 @@ class CheckoutCreate(ModelMutation, I18nMixin):
         # Resolve and process the lines, retrieving the variants and quantities
         lines = data.pop("lines", None)
         if lines:
-            (
-                cleaned_input["variants"],
-                cleaned_input["quantities"],
-            ) = cls.clean_checkout_lines(lines, country, cleaned_input["channel"])
+            try:
+                (
+                    cleaned_input["variants"],
+                    cleaned_input["quantities"],
+                ) = cls.clean_checkout_lines(lines, country, cleaned_input["channel"])
+            except ValidationError as e:
+                if 'quantity' in e.error_dict:
+                    (
+                        cleaned_input["variants"],
+                        cleaned_input["quantities"],
+                    ) = cls.clean_checkout_lines(lines, country,
+                                                 cleaned_input["alternative_channel"])
 
         # Use authenticated user's email as default email
         if user.is_authenticated:
@@ -422,6 +438,11 @@ class CheckoutCreate(ModelMutation, I18nMixin):
         channel = clean_channel(channel_input, error_class=CheckoutErrorCode)
         if channel:
             data["input"]["channel"] = channel
+
+        alter_channel_input = data.get("input", {}).get("alternative_channel")
+        alter_channel = clean_channel(alter_channel_input, error_class=CheckoutErrorCode)
+        if alter_channel:
+            data["input"]["alternative_channel"] = alter_channel
         response = super().perform_mutation(_root, info, **data)
         info.context.plugins.checkout_created(response.checkout)
         response.created = True
